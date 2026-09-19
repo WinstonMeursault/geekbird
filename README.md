@@ -88,7 +88,7 @@ KV 用来保存 QQ 和预约链接，与管理密码是两个独立设置，两�
 - `/service/`：维修服务、服务范围与原则。
 - `/booking/`：建筑光井预约大界面。**只有点击“开始预约”，才前往外部预约平台。**
 
-其他预约入口先进入 `/booking/`。本站不提供预约表单、图片上传或提交接口，也不会自动跳转。
+其他预约入口直接打开问卷星预约表单，服务反馈按钮直接打开反馈表单。旧 `/booking/` 页面保留兼容，不再作为必经入口；本站不收集或提交表单数据。
 
 ## 项目结构
 
@@ -141,13 +141,13 @@ Cloudflare 部署后通过管理页修改以下配置。根目录 [config.js](co
 - `bookingUrl`：实际外部预约平台的 HTTP(S) 链接。
 - `emergencyQQ`：联系 QQ 号，保留字符串形式。
 
-QQ 和预约链接是公开配置，管理密码只保存在 Cloudflare Secret 中。预约页读取 `/config.js` 后更新“开始预约”的链接；未配置或无效时显示入口尚未开放。右下角联系入口使用同一份配置。
+QQ 和预约链接是公开配置，管理密码只保存在 Cloudflare Secret 中。所有页面读取 `/config.js` 后更新全部预约链接；未配置或无效时禁用预约入口并显示提示。服务反馈链接固定指向 `https://www.wjx.top/m/93298004.aspx`，不受预约开关影响。右下角联系入口使用同一份配置。
 
 ## 正式发布前检查
 
 ```sh
 python3 scripts/cloudflare.py
-node --test tests/cloudflare.test.mjs
+node --test tests/*.test.mjs
 ```
 
 构建仅需 Python 3；测试需要 Node.js 22 或以上。构建会生成 `dist/cloudflare/`、`dist/geekbird-cloudflare-pages.zip` 和 SHA-256 清单，检查打包文件一致性。产物只包含公开静态资源和 Pages Worker，不包含管理密码、VPS 服务、文档或原始设计稿。
@@ -164,3 +164,11 @@ node --test tests/cloudflare.test.mjs
 4. 保留 VPS 供切换期间回退。Pages 回滚部署不会回滚 KV 配置；修改重要配置前记下原值。
 
 VPS 网站：<https://47.120.64.37/>，VPS 后台：<https://47.120.64.37/_gb-settings/>；原 `http://47.120.64.37:54321/` 也保留。两套后台各自保存配置和密码，互不同步。历史服务、备份和证书续期说明见 [VPS 部署记录](docs/vps.md)，早期纯静态部署见 [Nginx 部署说明](docs/deployment.md)。
+
+### 直达表单与本地预览
+
+- 默认预约：<https://www.wjx.top/m/93277562.aspx>。
+- 服务反馈：<https://www.wjx.top/m/93298004.aspx>。
+- 若线上后台已经保存了旧公众号链接，发布后需要在后台将预约链接更新为上述表单；源码默认值不会覆盖已保存的 KV / VPS 配置。
+- 未启用 JavaScript 时使用 HTML 中的默认预约链接；更换默认表单时同步修改三个公开页面。
+- 本地静态预览：`python3 -m http.server 8080 --bind 127.0.0.1`，访问 `http://127.0.0.1:8080/`。此方式仅预览公开页面，不运行管理后台。

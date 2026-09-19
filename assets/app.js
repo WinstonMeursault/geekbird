@@ -1,21 +1,23 @@
 (() => {
   'use strict';
   const config = window.GEEKBIRD_CONFIG || {};
-  const platformLink = document.querySelector('[data-booking-platform]');
-  if (platformLink) {
-    let bookingURL = '';
-    try {
-      const url = new URL(config.bookingUrl);
-      if (['http:', 'https:'].includes(url.protocol) && url.origin !== location.origin) bookingURL = url.href;
-    } catch { /* Invalid configuration is handled below. */ }
-    if (bookingURL) platformLink.href = bookingURL;
+  let bookingURL = '';
+  try {
+    const url = new URL(config.bookingUrl);
+    if (['http:', 'https:'].includes(url.protocol) && url.origin !== location.origin) bookingURL = url.href;
+  } catch { /* Invalid configuration is handled below. */ }
+  document.querySelectorAll('[data-booking-platform]').forEach(link => {
+    if (bookingURL) link.href = bookingURL;
     else {
-      platformLink.removeAttribute('href');
-      platformLink.setAttribute('aria-disabled', 'true');
-      const status = document.querySelector('#booking-status');
-      status.hidden = false;
-      status.textContent = '预约入口暂未开放，可以先通过 QQ 联系我们。';
+      link.removeAttribute('href');
+      link.setAttribute('aria-disabled', 'true');
+      link.setAttribute('title', '预约入口暂未开放，可以先通过 QQ 联系我们。');
     }
+  });
+  const bookingStatus = document.querySelector('#booking-status');
+  if (!bookingURL && bookingStatus) {
+    bookingStatus.hidden = false;
+    bookingStatus.textContent = '预约入口暂未开放，可以先通过 QQ 联系我们。';
   }
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const qq = String(config.emergencyQQ || '');

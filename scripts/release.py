@@ -69,8 +69,13 @@ def validate():
             assert target in FILES, f"Unpackaged link: {name}: {link}"
             if parts.fragment and target in pages:
                 assert parts.fragment in pages[target].ids, f"Missing anchor: {name}: {link}"
-    assert len(pages["booking/index.html"].platform_links) == 1, "Expected one Start Booking link"
-    assert not pages["index.html"].platform_links and not pages["service/index.html"].platform_links
+    for name, page in pages.items():
+        assert page.platform_links, f"Missing direct booking links: {name}"
+        assert "/booking/" not in page.links, f"Unexpected intermediate booking link: {name}"
+        assert "https://www.wjx.top/m/93298004.aspx" in page.links, f"Missing feedback form: {name}"
+        for link in page.platform_links:
+            url = urlsplit(link.get("href", ""))
+            assert url.scheme in ("http", "https") and url.hostname, f"Invalid direct booking link: {name}"
     css = "\n".join((ROOT / name).read_text(encoding="utf-8") for name in FILES if name.endswith(".css"))
     referenced_images = set()
     for url in re.findall(r"url\(['\"]?([^'\")]+)['\"]?\)", css):

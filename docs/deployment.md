@@ -10,7 +10,7 @@
 - 对外端口：TCP `54321`。
 - Nginx 网站目录：`/var/www/geekbird/public`，软链接指向某次发布的 `public/`。
 - 站点配置：`/etc/nginx/sites-available/geekbird.conf`。
-- 所有预约均由外部平台处理，链接仅维护在 `config.js`。`/booking/` 保留品牌首屏，不自动跳转。
+- 所有预约入口直达外部表单，运行时链接由 `config.js` 管理；HTML 中保留默认直达链接供无 JavaScript 时使用。服务反馈按钮直达反馈表单。旧 `/booking/` 保留兼容，不自动跳转。
 
 这些是当前环境的实际约定。更换服务器、域名或端口时同步修改 `deploy/nginx.conf`。该文件适用于 Nginx 的 `http` 上下文，主配置需加载标准 `mime.types`。
 
@@ -103,8 +103,8 @@ curl -I http://47.120.64.37:54321/assets/images/architecture.webp
 检查返回 200、HTML / JavaScript / WebP 的内容类型正确。未知路径和 `/README.md` 应返回 404。桌面与手机实际打开三页，确认：
 
 - 图片完整显示，页面没有水平溢出。
-- 首页和服务页的预约入口进入建筑光井预约页。
-- 预约页停留时不跳转；点击“开始预约”才前往配置的外部平台。
+- 首页和服务页的预约入口直接进入预约表单，服务反馈按钮直接进入反馈表单。
+- 旧预约页停留时不跳转；预约和反馈按钮分别直达对应表单。
 - 页面没有预约表单；QQ 联系显示正确。
 
 配置与资源采用 `Cache-Control: no-cache`，每次访问重新验证，避免使用旧配置。确认通过后可以清理临时上传文件。旧发布目录和站外备份按自己的保留策略清理，切勿删除 `readlink -f /var/www/geekbird/public` 当前指向的目录。
