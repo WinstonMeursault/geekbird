@@ -1,0 +1,22 @@
+[Unit]
+Description=GeekBird website settings
+After=network.target
+
+[Service]
+Type=simple
+User=geekbird
+Group=geekbird
+EnvironmentFile=/etc/geekbird/admin.env
+ExecStart=/usr/bin/python3 /var/www/geekbird/current-server/admin.py
+Restart=on-failure
+StateDirectory=geekbird
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/geekbird
+
+[Install]
+WantedBy=multi-user.target

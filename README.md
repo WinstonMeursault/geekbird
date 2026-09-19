@@ -2,6 +2,14 @@
 
 HTML / CSS / JavaScript 三页官网，字体在站点内托管。支持 Cloudflare Pages 托管与密码保护的配置后台，也可作为静态网站由 Nginx 托管。
 
+## 当前 VPS 访问
+
+已部署到原 VPS：网站 <https://47.120.64.37/>，管理后台 <https://47.120.64.37/_gb-settings/>。原地址 <http://47.120.64.37:54321/> 继续可用。后台用户名为 `admin`，使用部署时单独设置的密码。
+
+VPS 版本直接把配置保存在服务器，无需绑定 Cloudflare KV，也无需设置 Cloudflare 环境变量；下面的 Cloudflare 步骤用于以后迁移。发布、持久化配置及证书自动续期说明见 [VPS 部署记录](docs/vps.md)。
+
+## 预定正式域名
+
 正式域名（预先登记）：<https://geekbird.net/>。域名绑定和部署完成后使用以下地址：
 
 - 首页：<https://geekbird.net/>
