@@ -1,5 +1,7 @@
 # 正式部署与维护
 
+> Cloudflare Pages 和浏览器管理后台请使用 [Cloudflare 部署说明](cloudflare.md)。下文保留原 Nginx 静态部署流程，该流程不提供管理后台。
+
 ## 当前约定
 
 - 主机：`47.120.64.37`，SSH 用户 `root`，使用已配置的 SSH key。

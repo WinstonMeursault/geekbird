@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>站点设置 · GeekBird</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0b0e10; color: #e8ecea; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 64px 22px; }
+    main { max-width: 620px; margin: auto; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid #303738; padding-bottom: 24px; }
+    .brand { font-size: 13px; letter-spacing: .15em; color: #b6c4c1; }
+    a { color: #c8df80; text-underline-offset: 5px; }
+    h1 { font-size: clamp(28px, 6vw, 40px); margin: 40px 0 12px; font-weight: 550; }
+    p { color: #a7b1ae; line-height: 1.8; }
+    form { margin-top: 32px; }
+    label { display: block; margin-top: 28px; font-size: 16px; }
+    input { width: 100%; margin-top: 12px; border: 1px solid #46504d; border-radius: 10px; padding: 15px; background: #151a1c; color: #f4f5f3; font: inherit; }
+    input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #c8df80; outline-offset: 4px; }
+    .hint { margin: 9px 0 0; font-size: 13px; }
+    .actions { display: flex; align-items: center; gap: 22px; margin-top: 34px; flex-wrap: wrap; }
+    button { background: #d0e69a; color: #192015; border: 0; padding: 14px 24px; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 600; }
+    button:disabled { opacity: .45; cursor: wait; }
+    #status { min-height: 3.6em; margin-top: 24px; }
+    #status[data-error="true"] { color: #ffaaa5; }
+    footer { border-top: 1px solid #303738; margin-top: 28px; padding-top: 16px; font-size: 12px; color: #8d9995; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><span class="brand">GEEKBIRD / SETTINGS</span><a href="/" target="_blank" rel="noopener noreferrer">查看网站 ↗</a></header>
+    <h1>站点设置</h1>
+    <p>维护联系 QQ 与预约入口。保存后，网站会使用新的配置。</p>
+    <form id="settings">
+      <fieldset id="fields" disabled style="border:0;padding:0;margin:0;min-width:0">
+        <label for="qq">联系 QQ</label>
+        <input id="qq" name="emergencyQQ" type="text" inputmode="numeric" pattern="[1-9][0-9]{4,14}" maxlength="15" autocomplete="off" aria-describedby="qq-hint">
+        <p class="hint" id="qq-hint">用于网站右下角的联系入口。留空则显示“QQ 号暂未公布”。</p>
+        <label for="booking">预约链接</label>
+        <input id="booking" name="bookingUrl" type="url" maxlength="4096" placeholder="https://" autocomplete="off" aria-describedby="booking-hint">
+        <p class="hint" id="booking-hint">填写外部预约平台的完整链接。留空可暂停预约入口。</p>
+        <div class="actions"><button type="submit" id="save">保存设置</button><a id="preview" hidden target="_blank" rel="noopener noreferrer">检查预约链接 ↗</a></div>
+      </fieldset>
+    </form>
+    <p id="status" role="status" aria-live="polite">正在读取配置…</p>
+    <button id="retry" type="button" hidden>重新读取</button>
+    <footer>此页面不在公开导航中。请收藏地址，并妥善保管管理密码。</footer>
+  </main>
+  <script>
+    const form = document.querySelector('#settings');
+    const fields = document.querySelector('#fields');
+    const qq = document.querySelector('#qq');
+    const booking = document.querySelector('#booking');
+    const status = document.querySelector('#status');
+    const retry = document.querySelector('#retry');
+    const preview = document.querySelector('#preview');
+    let dirty = false;
+    function message(text, error = false) { status.textContent = text; status.dataset.error = String(error); }
+    function updatePreview() {
+      preview.hidden = true;
+      preview.removeAttribute('href');
+      try {
+        const url = new URL(booking.value.trim());
+        if (['https:', 'http:'].includes(url.protocol) && url.origin !== location.origin && !url.username && !url.password) {
+          preview.href = url.href; preview.hidden = false;
+        }
+      } catch {}
+    }
+    async function api(options = {}) {
+      const response = await fetch('/_gb-settings/api', { ...options, cache: 'no-store', credentials: 'same-origin' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '操作未完成，请稍后重试。');
+      return data;
+    }
+    async function load() {
+      retry.hidden = true;
+      message('正在读取配置…');
+      try {
+        const data = await api();
+        qq.value = data.emergencyQQ; booking.value = data.bookingUrl;
+        fields.disabled = false; updatePreview(); message('已读取当前配置。');
+      } catch (error) { message(error.message, true); retry.hidden = false; }
+    }
+    retry.addEventListener('click', load);
+    form.addEventListener('input', () => { dirty = true; updatePreview(); message('有未保存的修改。'); });
+    window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      fields.disabled = true; message('正在保存…');
+      try {
+        const data = await api({ method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-GB-Request': 'settings' },
+          body: JSON.stringify({ emergencyQQ: qq.value.trim(), bookingUrl: booking.value.trim() }) });
+        qq.value = data.emergencyQQ; booking.value = data.bookingUrl;
+        dirty = false; updatePreview(); message('已保存。各地区同步通常需要约 1 分钟，部分地区可能更久；稍后刷新网站即可查看。');
+      } catch (error) { message(error.message, true); }
+      finally { fields.disabled = false; }
+    });
+    load();
+  </script>
+</body>
+</html>
