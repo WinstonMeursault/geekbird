@@ -32,7 +32,7 @@
   <main>
     <header><span class="brand">GEEKBIRD / SETTINGS</span><a href="/" target="_blank" rel="noopener noreferrer">查看网站 ↗</a></header>
     <h1>站点设置</h1>
-    <p>维护联系 QQ 与预约入口。保存后，网站会使用新的配置。</p>
+    <p>维护联系 QQ、预约与反馈入口。保存后，网站会使用新的配置。</p>
     <form id="settings">
       <fieldset id="fields" disabled style="border:0;padding:0;margin:0;min-width:0">
         <label for="qq">联系 QQ</label>
@@ -41,6 +41,9 @@
         <label for="booking">预约链接</label>
         <input id="booking" name="bookingUrl" type="url" maxlength="4096" placeholder="https://" autocomplete="off" aria-describedby="booking-hint">
         <p class="hint" id="booking-hint">填写外部预约平台的完整链接。留空可暂停预约入口。</p>
+        <label for="feedback">反馈链接</label>
+        <input id="feedback" name="feedbackUrl" type="url" maxlength="4096" placeholder="https://" autocomplete="off" aria-describedby="feedback-hint">
+        <p class="hint" id="feedback-hint">填写外部反馈表单的完整链接。留空可暂停反馈入口。</p>
         <div class="actions"><button type="submit" id="save">保存设置</button><a id="preview" hidden target="_blank" rel="noopener noreferrer">检查预约链接 ↗</a></div>
       </fieldset>
     </form>
@@ -53,6 +56,7 @@
     const fields = document.querySelector('#fields');
     const qq = document.querySelector('#qq');
     const booking = document.querySelector('#booking');
+    const feedback = document.querySelector('#feedback');
     const status = document.querySelector('#status');
     const retry = document.querySelector('#retry');
     const preview = document.querySelector('#preview');
@@ -81,7 +85,7 @@
       message('正在读取配置…');
       try {
         const data = await api();
-        qq.value = data.emergencyQQ; booking.value = data.bookingUrl;
+        qq.value = data.emergencyQQ; booking.value = data.bookingUrl; feedback.value = data.feedbackUrl;
         fields.disabled = false; updatePreview(); message('已读取当前配置。');
       } catch (error) { message(error.message, true); retry.hidden = false; }
     }
@@ -93,8 +97,8 @@
       fields.disabled = true; message('正在保存…');
       try {
         const data = await api({ method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-GB-Request': 'settings' },
-          body: JSON.stringify({ emergencyQQ: qq.value.trim(), bookingUrl: booking.value.trim() }) });
-        qq.value = data.emergencyQQ; booking.value = data.bookingUrl;
+          body: JSON.stringify({ emergencyQQ: qq.value.trim(), bookingUrl: booking.value.trim(), feedbackUrl: feedback.value.trim() }) });
+        qq.value = data.emergencyQQ; booking.value = data.bookingUrl; feedback.value = data.feedbackUrl;
         dirty = false; updatePreview(); message('已保存。各地区同步通常需要约 1 分钟，部分地区可能更久；稍后刷新网站即可查看。');
       } catch (error) { message(error.message, true); }
       finally { fields.disabled = false; }

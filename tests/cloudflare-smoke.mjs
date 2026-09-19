@@ -33,7 +33,7 @@ async function save(config, origin = base) {
   }, body: JSON.stringify(config) });
 }
 try {
-  const changed = { emergencyQQ: '123456789', bookingUrl: 'https://booking.example/form?from=smoke' };
+  const changed = { emergencyQQ: '123456789', bookingUrl: 'https://booking.example/form?from=smoke', feedbackUrl: 'https://feedback.example/form?from=smoke' };
   assert.equal((await save(changed)).status, 200);
   const publicConfig = await fetch(base + '/config.js');
   assert.equal(publicConfig.status, 200);

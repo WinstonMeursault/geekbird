@@ -16,19 +16,20 @@ BASE = '/_gb-settings'
 
 
 def validate(value, origin):
-    if not isinstance(value, dict) or any(not isinstance(value.get(k), str) for k in ('emergencyQQ', 'bookingUrl')):
-        raise ValueError('请填写 QQ 号和预约链接。')
-    config = {k: value[k].strip() for k in ('emergencyQQ', 'bookingUrl')}
+    if not isinstance(value, dict) or any(not isinstance(value.get(k), str) for k in ('emergencyQQ', 'bookingUrl', 'feedbackUrl')):
+        raise ValueError('请填写 QQ 号、预约和反馈链接。')
+    config = {k: value[k].strip() for k in ('emergencyQQ', 'bookingUrl', 'feedbackUrl')}
     if config['emergencyQQ'] and not re.fullmatch(r'[1-9][0-9]{4,14}', config['emergencyQQ']):
         raise ValueError('QQ 号应为 5–15 位数字，且不能以 0 开头。')
-    link = config['bookingUrl']
-    if link:
-        url = urlsplit(link)
-        if (url.scheme not in ('http', 'https') or not url.hostname or url.username or url.password
-                or len(link) > 4096 or any(c.isspace() for c in link)
-                or url.hostname == urlsplit(origin).hostname):
-            raise ValueError('请使用外部预约平台的完整 HTTP(S) 链接，不要包含账号密码。')
-        _ = url.port  # Reject malformed ports.
+    for key in ('bookingUrl', 'feedbackUrl'):
+        link = config[key]
+        if link:
+            url = urlsplit(link)
+            if (url.scheme not in ('http', 'https') or not url.hostname or url.username or url.password
+                    or len(link) > 4096 or any(c.isspace() for c in link)
+                    or url.hostname == urlsplit(origin).hostname):
+                raise ValueError('请使用外部平台的完整 HTTP(S) 链接，不要包含账号密码。')
+            _ = url.port  # Reject malformed ports.
     return config
 
 
@@ -91,6 +92,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(404)
         if self.command in ('GET', 'HEAD'):
             config = json.loads(self.server.config_path.read_text(encoding='utf-8'))
+            if isinstance(config, dict) and 'feedbackUrl' not in config:
+                # Source checkout and VPS package keep defaults in config.js.
+                root = Path(__file__).resolve().parents[1]
+                source = (root / 'public/config.js' if (root / 'public').is_dir() else root / 'config.js').read_text(encoding='utf-8')
+                match = re.search(r'feedbackUrl\s*:\s*("(?:[^"\\]|\\.)*")', source)
+                if not match:
+                    raise ValueError('Missing feedback default')
+                config['feedbackUrl'] = json.loads(match[1])
+            config = validate(config, self.server.origin)
             body = json.dumps(config, ensure_ascii=False)
             if path == '/config.js':
                 return self.reply(200, 'window.GEEKBIRD_CONFIG = Object.freeze(' + body + ');\n', 'application/javascript; charset=utf-8')
@@ -112,7 +122,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             value = validate(json.loads(self.rfile.read(size)), self.server.origin)
         except (ValueError, UnicodeError):
-            return self.reply(400, json.dumps({'error': '请检查 QQ 号和外部 HTTP(S) 预约链接是否正确。'}, ensure_ascii=False))
+            return self.reply(400, json.dumps({'error': '请检查 QQ 号和外部 HTTP(S) 预约、反馈链接是否正确。'}, ensure_ascii=False))
         write_config(self.server.config_path, value)
         return self.reply(200, json.dumps(value, ensure_ascii=False))
 

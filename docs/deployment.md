@@ -10,7 +10,7 @@
 - 对外端口：TCP `54321`。
 - Nginx 网站目录：`/var/www/geekbird/public`，软链接指向某次发布的 `public/`。
 - 站点配置：`/etc/nginx/sites-available/geekbird.conf`。
-- 所有预约入口直达外部表单，运行时链接由 `config.js` 管理；HTML 中保留默认直达链接供无 JavaScript 时使用。服务反馈按钮直达反馈表单。旧 `/booking/` 保留兼容，不自动跳转。
+- 预约和反馈入口直达外部表单，地址统一由 `config.js` 管理，HTML 仅声明配置键。无 JavaScript 时显示启用提示。旧 `/booking/` 保留兼容，不自动跳转。
 
 这些是当前环境的实际约定。更换服务器、域名或端口时同步修改 `deploy/nginx.conf`。该文件适用于 Nginx 的 `http` 上下文，主配置需加载标准 `mime.types`。
 

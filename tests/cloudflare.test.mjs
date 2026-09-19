@@ -27,7 +27,7 @@ function save(env, config, headers = {}) {
   return worker.fetch(request('/_gb-settings/api', { method: 'PUT', body: JSON.stringify(config),
     headers: { Origin: origin, 'Content-Type': 'application/json', 'X-GB-Request': 'settings', ...headers } }), env);
 }
-const config = { emergencyQQ: '123456789', bookingUrl: 'https://booking.example/form?a=1&b=2#go' };
+const config = { emergencyQQ: '123456789', bookingUrl: 'https://booking.example/form?a=1&b=2#go', feedbackUrl: 'https://feedback.example/form' };
 
 test('Pages control files are never served as public assets', async () => {
   for (const path of ['/_worker.js', '/_worker.js/anything', '/_routes.json', '/_headers']) {
@@ -56,7 +56,9 @@ test('authenticated admin is private and contains built HTML', async () => {
   assert.equal(result.status, 200);
   assert.equal(result.headers.get('Cache-Control'), 'no-store');
   assert.match(result.headers.get('X-Robots-Tag'), /noindex/);
-  assert.match(await result.text(), /<form id="settings">/);
+  const html = await result.text();
+  assert.match(html, /<form id="settings">/);
+  assert.match(html, /name="feedbackUrl"/);
 });
 
 test('initial settings load from existing config, then save reaches public config', async () => {
@@ -76,9 +78,9 @@ test('initial settings load from existing config, then save reaches public confi
 
 test('blank settings intentionally disable contact and booking', async () => {
   const env = environment();
-  const result = await save(env, { emergencyQQ: ' ', bookingUrl: '' });
+  const result = await save(env, { emergencyQQ: ' ', bookingUrl: '', feedbackUrl: '' });
   assert.equal(result.status, 200);
-  assert.deepEqual(await result.json(), { emergencyQQ: '', bookingUrl: '' });
+  assert.deepEqual(await result.json(), { emergencyQQ: '', bookingUrl: '', feedbackUrl: '' });
 });
 
 test('invalid input and cross-origin writes do not change saved configuration', async () => {
@@ -127,4 +129,23 @@ test('KV failure reports failure, missing binding keeps static public website av
   assert.equal((await worker.fetch(request('/_gb-settings/'), env)).status, 503);
   assert.equal(await (await worker.fetch(request('/config.js', { auth: false }), env)).text(), initial);
   assert.equal(await (await worker.fetch(request('/', { auth: false }), env)).text(), 'static page');
+});
+
+test('legacy records inherit feedback default, explicit blank remains disabled', async () => {
+  const env = environment();
+  const { feedbackUrl, ...legacy } = config;
+  await env.SITE_CONFIG.put('site-config', JSON.stringify(legacy));
+  const value = await (await worker.fetch(request('/_gb-settings/api'), env)).json();
+  assert.equal(value.feedbackUrl, 'https://www.wjx.top/m/93298004.aspx');
+  assert.equal((await save(env, legacy)).status, 400);
+  assert.equal((await save(env, { ...config, feedbackUrl: '' })).status, 200);
+  assert.equal((await (await worker.fetch(request('/_gb-settings/api'), env)).json()).feedbackUrl, '');
+});
+test('feedback validation rejects unsafe values without changing saved configuration', async () => {
+  const env = environment();
+  await save(env, config);
+  for (const feedbackUrl of [null, 123, 'javascript:alert(1)', origin + '/feedback/', 'https://user:pass@example.org/', 'https://example.org:bad/', 'https://example.org/with space']) {
+    assert.equal((await save(env, { ...config, feedbackUrl })).status, 400);
+  }
+  assert.deepEqual(await (await worker.fetch(request('/_gb-settings/api'), env)).json(), config);
 });
