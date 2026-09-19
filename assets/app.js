@@ -1,22 +1,35 @@
 (() => {
   'use strict';
   const config = window.GEEKBIRD_CONFIG || {};
-  const platformLink = document.querySelector('[data-booking-platform]');
-  if (platformLink) {
-    let bookingURL = '';
+  function bindLinks(key, label, statusSelector) {
+    let href = '';
     try {
-      const url = new URL(config.bookingUrl);
-      if (['http:', 'https:'].includes(url.protocol) && url.origin !== location.origin) bookingURL = url.href;
+      const value = config[key];
+      const url = new URL(value);
+      if (typeof value === 'string' && value.length <= 4096 && !/\s/.test(value.trim()) &&
+          ['http:', 'https:'].includes(url.protocol) && url.origin !== location.origin &&
+          !url.username && !url.password) href = url.href;
     } catch { /* Invalid configuration is handled below. */ }
-    if (bookingURL) platformLink.href = bookingURL;
-    else {
-      platformLink.removeAttribute('href');
-      platformLink.setAttribute('aria-disabled', 'true');
-      const status = document.querySelector('#booking-status');
-      status.hidden = false;
-      status.textContent = '预约入口暂未开放，可以先通过 QQ 联系我们。';
+    const message = `${label}入口暂未开放，可以先通过 QQ 联系我们。`;
+    document.querySelectorAll(`[data-config-link="${key}"]`).forEach(link => {
+      if (href) {
+        link.href = href;
+        link.removeAttribute('aria-disabled');
+        link.removeAttribute('title');
+      } else {
+        link.removeAttribute('href');
+        link.setAttribute('aria-disabled', 'true');
+        link.setAttribute('title', message);
+      }
+    });
+    const status = document.querySelector(statusSelector);
+    if (status) {
+      status.hidden = Boolean(href);
+      status.textContent = href ? '' : message;
     }
   }
+  bindLinks('bookingUrl', '预约', '#booking-status');
+  bindLinks('feedbackUrl', '反馈', '#feedback-status');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const qq = String(config.emergencyQQ || '');
   const contact = document.querySelector('.contact');

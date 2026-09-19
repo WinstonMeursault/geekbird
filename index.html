@@ -9,10 +9,10 @@
     <title>旧物新生，热爱不止 · 极客鸟 GeekBird</title>
     <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
     <link rel="preload" href="/assets/fonts/noto-sans-sc.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/assets/fonts/fonts.css?v=20260919-type1">
-    <link rel="stylesheet" href="/assets/style.css?v=20260919-type1">
+    <link rel="stylesheet" href="/assets/fonts/fonts.css?v=20260920-direct-forms">
+    <link rel="stylesheet" href="/assets/style.css?v=20260920-direct-forms">
     <script defer src="/config.js"></script>
-    <script defer src="/assets/app.js?v=20260919-type1"></script>
+    <script defer src="/assets/app.js?v=20260920-config-links"></script>
   </head>
   <body class="page-home">
     <a class="skip" href="#main">跳至主要内容</a>
@@ -23,7 +23,7 @@
         <a href="/service/" >服务</a>
         <a href="/#about">关于</a>
       </nav>
-      <a class="nav-book" href="/booking/" >预约维修 <span>↗</span></a>
+      <a class="nav-book" data-config-link="bookingUrl" aria-disabled="true" >预约维修 <span>↗</span></a>
     </header>
     <main id="main">
       <section class="hero hero-home">
@@ -34,9 +34,13 @@
           <h1>旧物新生<br>热爱不止。</h1>
           <p class="hero-desc">有些陪伴，值得更久一点。<br>我们用技术，让熟悉的设备继续陪你向前。</p>
           <div class="actions">
-            <a class="button" href="/booking/">预约维修 <span>↗</span></a>
+            <a class="button" data-config-link="bookingUrl" aria-disabled="true">预约维修 <span>↗</span></a>
+            <a class="button button-secondary" data-config-link="feedbackUrl" aria-disabled="true">服务反馈 <span>↗</span></a>
             <a class="story-link" href="#about"><span class="circle">↘</span> 我们的故事</a>
           </div>
+          <p class="hero-desc" id="booking-status" role="status" hidden></p>
+          <p class="hero-desc" id="feedback-status" role="status" hidden></p>
+          <noscript><p style="font-family:system-ui,sans-serif">请启用 JavaScript 后使用预约与反馈入口。</p></noscript>
         </div>
         <div class="edge" aria-hidden="true">
           REPAIR / PEOPLE / PLANET
@@ -82,14 +86,17 @@
       <section class="section invitation">
         <p class="eyebrow">STILL PART OF YOUR STORY.</p>
         <h2 class="reveal">别急着告别。<br><span class="muted">再给它一次机会。</span></h2>
-        <a class="button" href="/booking/">预约维修 <span>↗</span></a>
+        <div class="actions">
+          <a class="button" data-config-link="bookingUrl" aria-disabled="true">预约维修 <span>↗</span></a>
+          <a class="button button-secondary" data-config-link="feedbackUrl" aria-disabled="true">服务反馈 <span>↗</span></a>
+        </div>
         <span class="invitation-aside">熟悉的设备，未完的故事。</span>
       </section>
     </main>
     <footer class="footer">
       <a class="brand" href="/"><span class="logo"><img src="/assets/logo.svg" alt="" width="736" height="702"></span><span>极客鸟 <b>GeekBird</b></span></a>
       <span>让设备多用一天，让热爱多走一程。</span>
-      <a href="/booking/">预约一次修复 ↗</a>
+      <a data-config-link="bookingUrl" aria-disabled="true">预约一次修复 ↗</a>
       <div class="footer-bottom">
         <span>GEEKBIRD · VOLUNTEER REPAIR COLLECTIVE</span>
         <span>REPAIR / PEOPLE / PLANET</span>

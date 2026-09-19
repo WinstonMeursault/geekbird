@@ -201,6 +201,7 @@ button:disabled {
 }
 .actions {
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   gap:30px
 }
@@ -1177,4 +1178,24 @@ h2 {
     font-size: 9px;
     letter-spacing: .24em;
   }
+}
+
+/* Direct form actions share the existing layout on every public page. */
+.button-secondary {
+  border-color:var(--line);
+  color:var(--muted)
+}
+.actions .story-link,.actions .text-link {
+  flex-basis:100%
+}
+a[aria-disabled="true"] {
+  opacity:.55;
+  cursor:not-allowed
+}
+#booking-status:not([hidden]) {
+  margin-top:20px
+}
+@media(max-width:650px) {
+  .actions { gap:12px; }
+  .actions .button { gap:16px; padding:13px 16px; }
 }

@@ -9,10 +9,10 @@
     <title>技术无界，善意有光 · 极客鸟 GeekBird</title>
     <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
     <link rel="preload" href="/assets/fonts/noto-sans-sc.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/assets/fonts/fonts.css?v=20260919-type1">
-    <link rel="stylesheet" href="/assets/style.css?v=20260919-type1">
+    <link rel="stylesheet" href="/assets/fonts/fonts.css?v=20260920-direct-forms">
+    <link rel="stylesheet" href="/assets/style.css?v=20260920-direct-forms">
     <script defer src="/config.js"></script>
-    <script defer src="/assets/app.js?v=20260919-type1"></script>
+    <script defer src="/assets/app.js?v=20260920-config-links"></script>
   </head>
   <body class="page-service">
     <a class="skip" href="#main">跳至主要内容</a>
@@ -23,7 +23,7 @@
         <a href="/service/" aria-current="page">服务</a>
         <a href="/#about">关于</a>
       </nav>
-      <a class="nav-book" href="/booking/" >预约维修 <span>↗</span></a>
+      <a class="nav-book" data-config-link="bookingUrl" aria-disabled="true" >预约维修 <span>↗</span></a>
     </header>
     <main id="main">
       <section class="hero hero-service">
@@ -34,9 +34,13 @@
           <h1>技术无界<br>善意有光。</h1>
           <p class="hero-desc">你不必先懂电脑，才能寻求帮助。<br>从一个说不清的小问题开始，我们陪你找原因。</p>
           <div class="actions">
-            <a class="button" href="/booking/">预约维修 <span>↗</span></a>
+            <a class="button" data-config-link="bookingUrl" aria-disabled="true">预约维修 <span>↗</span></a>
+            <a class="button button-secondary" data-config-link="feedbackUrl" aria-disabled="true">服务反馈 <span>↗</span></a>
             <a class="text-link" href="#services">查看服务范围 <span>↓</span></a>
           </div>
+          <p class="hero-desc" id="booking-status" role="status" hidden></p>
+          <p class="hero-desc" id="feedback-status" role="status" hidden></p>
+          <noscript><p style="font-family:system-ui,sans-serif">请启用 JavaScript 后使用预约与反馈入口。</p></noscript>
         </div>
         <div class="edge" aria-hidden="true">
           OPEN / SHARE / REPAIR
@@ -57,12 +61,12 @@
           <p>开不了机、总是卡顿，或只是有点不对劲。<br>你说现象，我们一起找线索。</p>
         </div>
         <div class="service-grid">
-          <a class="service-item reveal" href="/booking/"><div class="item-meta"><span>01</span><span>SOFTWARE</span></div><h3>系统故障 / 软件问题</h3><p>卡顿、蓝屏、软件打不开，一起找出打断日常的原因。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
-          <a class="service-item reveal" href="/booking/"><div class="item-meta"><span>02</span><span>DIAGNOSTICS</span></div><h3>硬件检测 / 故障排查</h3><p>开不了机、频繁重启或出现异响，从检测开始定位问题。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
-          <a class="service-item reveal" href="/booking/"><div class="item-meta"><span>03</span><span>SYSTEM & DATA</span></div><h3>系统安装 / 数据迁移</h3><p>先确认资料与备份，再协助安装系统、迁移常用文件。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
-          <a class="service-item reveal" href="/booking/"><div class="item-meta"><span>04</span><span>MAINTENANCE</span></div><h3>清灰维护 / 散热优化</h3><p>检查积灰、温度与风扇状态，让散热回到应有的节奏。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
-          <a class="service-item reveal" href="/booking/"><div class="item-meta"><span>05</span><span>CONNECTION</span></div><h3>网络与外设问题</h3><p>连不上网、认不到设备，从连接、驱动和设置逐项排查。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
-          <a class="service-item reveal" href="/booking/"><div class="item-meta"><span>06</span><span>MORE POSSIBILITIES</span></div><h3>其他电脑相关问题</h3><p>说不清问题也没关系。告诉我们遇到了什么，一起看看。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
+          <a class="service-item reveal" data-config-link="bookingUrl" aria-disabled="true"><div class="item-meta"><span>01</span><span>SOFTWARE</span></div><h3>系统故障 / 软件问题</h3><p>卡顿、蓝屏、软件打不开，一起找出打断日常的原因。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
+          <a class="service-item reveal" data-config-link="bookingUrl" aria-disabled="true"><div class="item-meta"><span>02</span><span>DIAGNOSTICS</span></div><h3>硬件检测 / 故障排查</h3><p>开不了机、频繁重启或出现异响，从检测开始定位问题。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
+          <a class="service-item reveal" data-config-link="bookingUrl" aria-disabled="true"><div class="item-meta"><span>03</span><span>SYSTEM & DATA</span></div><h3>系统安装 / 数据迁移</h3><p>先确认资料与备份，再协助安装系统、迁移常用文件。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
+          <a class="service-item reveal" data-config-link="bookingUrl" aria-disabled="true"><div class="item-meta"><span>04</span><span>MAINTENANCE</span></div><h3>清灰维护 / 散热优化</h3><p>检查积灰、温度与风扇状态，让散热回到应有的节奏。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
+          <a class="service-item reveal" data-config-link="bookingUrl" aria-disabled="true"><div class="item-meta"><span>05</span><span>CONNECTION</span></div><h3>网络与外设问题</h3><p>连不上网、认不到设备，从连接、驱动和设置逐项排查。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
+          <a class="service-item reveal" data-config-link="bookingUrl" aria-disabled="true"><div class="item-meta"><span>06</span><span>MORE POSSIBILITIES</span></div><h3>其他电脑相关问题</h3><p>说不清问题也没关系。告诉我们遇到了什么，一起看看。</p><span class="item-arrow" aria-hidden="true">↗</span></a>
         </div>
       </section>
       <section class="section principles">
@@ -89,14 +93,17 @@
       <section class="section invitation">
         <p class="eyebrow">A CONVERSATION IS A GOOD START.</p>
         <h2 class="reveal">说说你的困扰。<br><span class="muted">我们一起找答案。</span></h2>
-        <a class="button" href="/booking/">预约维修 <span>↗</span></a>
+        <div class="actions">
+          <a class="button" data-config-link="bookingUrl" aria-disabled="true">预约维修 <span>↗</span></a>
+          <a class="button button-secondary" data-config-link="feedbackUrl" aria-disabled="true">服务反馈 <span>↗</span></a>
+        </div>
         <span class="invitation-aside">从一次认真倾听开始。</span>
       </section>
     </main>
     <footer class="footer">
       <a class="brand" href="/"><span class="logo"><img src="/assets/logo.svg" alt="" width="736" height="702"></span><span>极客鸟 <b>GeekBird</b></span></a>
       <span>让设备多用一天，让热爱多走一程。</span>
-      <a href="/booking/">预约一次修复 ↗</a>
+      <a data-config-link="bookingUrl" aria-disabled="true">预约一次修复 ↗</a>
       <div class="footer-bottom">
         <span>GEEKBIRD · VOLUNTEER REPAIR COLLECTIVE</span>
         <span>REPAIR / PEOPLE / PLANET</span>

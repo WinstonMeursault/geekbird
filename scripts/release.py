@@ -37,7 +37,7 @@ class Page(HTMLParser):
         for key in ("href", "src"):
             if attrs.get(key):
                 self.links.append(attrs[key])
-        if "data-booking-platform" in attrs:
+        if "data-config-link" in attrs:
             self.platform_links.append(attrs)
 
 
@@ -69,8 +69,12 @@ def validate():
             assert target in FILES, f"Unpackaged link: {name}: {link}"
             if parts.fragment and target in pages:
                 assert parts.fragment in pages[target].ids, f"Missing anchor: {name}: {link}"
-    assert len(pages["booking/index.html"].platform_links) == 1, "Expected one Start Booking link"
-    assert not pages["index.html"].platform_links and not pages["service/index.html"].platform_links
+    for name, page in pages.items():
+        assert page.platform_links, f"Missing direct booking links: {name}"
+        assert "/booking/" not in page.links, f"Unexpected intermediate booking link: {name}"
+        assert {link['data-config-link'] for link in page.platform_links} == {'bookingUrl', 'feedbackUrl'}, f"Missing configurable links: {name}"
+        for link in page.platform_links:
+            assert not link.get('href') and link.get('aria-disabled') == 'true', f"Link must be initialized from config.js: {name}"
     css = "\n".join((ROOT / name).read_text(encoding="utf-8") for name in FILES if name.endswith(".css"))
     referenced_images = set()
     for url in re.findall(r"url\(['\"]?([^'\")]+)['\"]?\)", css):
@@ -86,14 +90,17 @@ def validate():
         if name.endswith(".woff2"):
             assert (ROOT / name).read_bytes()[:4] == b"wOF2", f"Invalid WOFF2: {name}"
     config = (ROOT / "config.js").read_text(encoding="utf-8")
-    match = re.search(r'bookingUrl\s*:\s*("(?:[^"\\]|\\.)*")', config)
-    assert match, "Missing bookingUrl in config.js"
-    booking_url = json.loads(match[1])
-    parsed = urlsplit(booking_url)
-    assert parsed.scheme in ("http", "https") and parsed.hostname, "Configure a valid external booking URL before release"
-    assert parsed.hostname not in ("localhost", "127.0.0.1", "47.120.64.37"), "Booking URL must point to the external platform"
+    for key in ('bookingUrl', 'feedbackUrl'):
+        match = re.search(rf'{key}\s*:\s*("(?:[^"\\]|\\.)*")', config)
+        assert match, f"Missing {key} in config.js"
+        link = json.loads(match[1]).strip()
+        if not link:
+            continue
+        parsed = urlsplit(link)
+        assert parsed.scheme in ("http", "https") and parsed.hostname, f"Configure a valid external {key} before release"
+        assert parsed.hostname not in ("localhost", "127.0.0.1", "47.120.64.37"), f"{key} must point to the external platform"
     assert re.search(r'emergencyQQ\s*:\s*"[1-9][0-9]{4,14}"', config), "Configure a valid contact QQ before release"
-    print(f"Checked {len(FILES)} production files, all local references, images and booking configuration.")
+    print(f"Checked {len(FILES)} production files, all local references, images and link configuration.")
     return {f"public/{name}": hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in sorted(FILES)}
 
 

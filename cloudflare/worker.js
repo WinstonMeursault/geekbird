@@ -35,25 +35,27 @@ async function authenticated(request, password) {
 }
 
 function validate(value, origin) {
-  if (!value || typeof value.emergencyQQ !== 'string' || typeof value.bookingUrl !== 'string') {
-    throw new Error('请填写 QQ 号和预约链接。');
+  const keys = ['emergencyQQ', 'bookingUrl', 'feedbackUrl'];
+  if (!value || keys.some(key => typeof value[key] !== 'string')) {
+    throw new Error('请填写 QQ 号、预约和反馈链接。');
   }
-  const emergencyQQ = value.emergencyQQ.trim();
-  const bookingUrl = value.bookingUrl.trim();
-  if (emergencyQQ && !/^[1-9]\d{4,14}$/.test(emergencyQQ)) throw new Error('QQ 号应为 5–15 位数字，且不能以 0 开头。');
-  if (bookingUrl) {
+  const config = Object.fromEntries(keys.map(key => [key, value[key].trim()]));
+  if (config.emergencyQQ && !/^[1-9]\d{4,14}$/.test(config.emergencyQQ)) throw new Error('QQ 号应为 5–15 位数字，且不能以 0 开头。');
+  for (const key of ['bookingUrl', 'feedbackUrl']) {
+    const link = config[key];
+    if (!link) continue;
     let url;
-    try { url = new URL(bookingUrl); } catch { throw new Error('请填写完整的 http:// 或 https:// 预约链接。'); }
-    if (!['http:', 'https:'].includes(url.protocol) || [new URL(origin).hostname, 'geekbird.net', 'www.geekbird.net'].includes(url.hostname) || url.username || url.password || bookingUrl.length > 4096) {
-      throw new Error('请使用外部预约平台的 HTTP(S) 链接，不要包含账号密码。');
+    try { url = new URL(link); } catch { throw new Error('请填写完整的 http:// 或 https:// 链接。'); }
+    if (!['http:', 'https:'].includes(url.protocol) || [new URL(origin).hostname, 'geekbird.net', 'www.geekbird.net'].includes(url.hostname) || url.username || url.password || link.length > 4096 || /\s/.test(link)) {
+      throw new Error('请使用外部平台的 HTTP(S) 链接，不要包含账号密码。');
     }
   }
-  return { emergencyQQ, bookingUrl };
+  return config;
 }
 
 async function readConfig(request, env) {
   const saved = await env.SITE_CONFIG.get(KEY, 'json');
-  if (saved !== null) return validate(saved, new URL(request.url).origin);
+  if (saved !== null && Object.hasOwn(saved, 'feedbackUrl')) return validate(saved, new URL(request.url).origin);
   // Keep the existing configuration until the first successful save.
   const asset = await env.ASSETS.fetch(new Request(new URL('/config.js', request.url)));
   if (!asset.ok) throw new Error('Initial configuration is unavailable');
@@ -63,7 +65,11 @@ async function readConfig(request, env) {
     if (!match) throw new Error('Initial configuration is invalid');
     return JSON.parse(match[1]);
   };
-  return { emergencyQQ: read('emergencyQQ'), bookingUrl: read('bookingUrl') };
+  // Only missing legacy fields inherit defaults; an explicit blank stays disabled.
+  const config = saved === null
+    ? { emergencyQQ: read('emergencyQQ'), bookingUrl: read('bookingUrl'), feedbackUrl: read('feedbackUrl') }
+    : { ...saved, feedbackUrl: read('feedbackUrl') };
+  return validate(config, new URL(request.url).origin);
 }
 
 export default {
