@@ -29,6 +29,12 @@ function save(env, config, headers = {}) {
 }
 const config = { emergencyQQ: '123456789', bookingUrl: 'https://booking.example/form?a=1&b=2#go' };
 
+test('Pages control files are never served as public assets', async () => {
+  for (const path of ['/_worker.js', '/_worker.js/anything', '/_routes.json', '/_headers']) {
+    assert.equal((await worker.fetch(request(path, { auth: false }), environment())).status, 404);
+  }
+});
+
 test('all management paths and writes require authentication; no secret leaks', async () => {
   const env = environment();
   for (const path of ['/_gb-settings', '/_gb-settings/', '/_gb-settings/api', '/_gb-settings/anything']) {
@@ -40,9 +46,9 @@ test('all management paths and writes require authentication; no secret leaks', 
     }
   }
   env.ADMIN_PASSWORD = 'short';
-  assert.equal((await worker.fetch(request('/_gb-settings/'), env)).status, 401);
+  assert.equal((await worker.fetch(request('/_gb-settings/'), env)).status, 503);
   env.ADMIN_PASSWORD = undefined;
-  assert.equal((await worker.fetch(request('/_gb-settings/'), env)).status, 401);
+  assert.equal((await worker.fetch(request('/_gb-settings/'), env)).status, 503);
 });
 
 test('authenticated admin is private and contains built HTML', async () => {
@@ -79,7 +85,9 @@ test('invalid input and cross-origin writes do not change saved configuration', 
   const env = environment();
   await save(env, config);
   for (const change of [{ emergencyQQ: '01234' }, { emergencyQQ: 12345 }, { bookingUrl: 'javascript:alert(1)' },
-    { bookingUrl: origin + '/booking/' }, { bookingUrl: 'https://user:pass@example.org/' }]) {
+    { bookingUrl: origin + '/booking/' }, { bookingUrl: 'http://example.pages.dev/booking/' },
+    { bookingUrl: 'https://geekbird.net/booking/' }, { bookingUrl: 'https://www.geekbird.net/booking/' },
+    { bookingUrl: 'https://user:pass@example.org/' }]) {
     assert.equal((await save(env, { ...config, ...change })).status, 400);
   }
   assert.equal((await save(env, config, { Origin: 'https://evil.example' })).status, 403);
@@ -87,6 +95,28 @@ test('invalid input and cross-origin writes do not change saved configuration', 
   assert.equal((await save(env, config, { 'Content-Type': 'text/plain' })).status, 415);
   assert.equal((await save(env, { ...config, bookingUrl: 'x'.repeat(17000) })).status, 413);
   assert.deepEqual(await (await worker.fetch(request('/_gb-settings/api'), env)).json(), config);
+});
+
+test('invalid persisted configuration fails without leaking arbitrary KV values', async () => {
+  const env = environment();
+  env.SITE_CONFIG.get = async () => ({ emergencyQQ: 'bad', bookingUrl: 'javascript:alert(1)', privateNote: 'do-not-publish' });
+  const result = await worker.fetch(request('/config.js', { auth: false }), env);
+  assert.equal(result.status, 503);
+  assert.ok(!(await result.text()).includes('do-not-publish'));
+  env.SITE_CONFIG.get = async () => ({ ...config, privateNote: 'do-not-publish' });
+  assert.ok(!(await (await worker.fetch(request('/config.js', { auth: false }), env)).text()).includes('do-not-publish'));
+});
+
+test('public configuration methods, HEAD response and malformed JSON are handled', async () => {
+  const env = environment();
+  const head = await worker.fetch(request('/config.js', { method: 'HEAD', auth: false }), env);
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), '');
+  assert.equal((await worker.fetch(request('/config.js', { method: 'POST', auth: false }), env)).status, 405);
+  assert.equal((await worker.fetch(request('/_gb-settings/api', { method: 'PUT', body: '{',
+    headers: { Origin: origin, 'X-GB-Request': 'settings', 'Content-Type': 'application/json' } }), env)).status, 400);
+  delete env.SITE_CONFIG;
+  assert.equal((await worker.fetch(request('/config.js', { method: 'POST', auth: false }), env)).status, 405);
 });
 
 test('KV failure reports failure, missing binding keeps static public website available', async () => {

@@ -70,7 +70,9 @@
     }
     async function api(options = {}) {
       const response = await fetch('/_gb-settings/api', { ...options, cache: 'no-store', credentials: 'same-origin' });
-      const data = await response.json();
+      let data;
+      try { data = await response.json(); }
+      catch { throw new Error('服务暂时不可用，请稍后重试。'); }
       if (!response.ok) throw new Error(data.error || '操作未完成，请稍后重试。');
       return data;
     }

@@ -44,7 +44,7 @@ function validate(value, origin) {
   if (bookingUrl) {
     let url;
     try { url = new URL(bookingUrl); } catch { throw new Error('请填写完整的 http:// 或 https:// 预约链接。'); }
-    if (!['http:', 'https:'].includes(url.protocol) || url.origin === origin || url.username || url.password || bookingUrl.length > 4096) {
+    if (!['http:', 'https:'].includes(url.protocol) || [new URL(origin).hostname, 'geekbird.net', 'www.geekbird.net'].includes(url.hostname) || url.username || url.password || bookingUrl.length > 4096) {
       throw new Error('请使用外部预约平台的 HTTP(S) 链接，不要包含账号密码。');
     }
   }
@@ -53,7 +53,7 @@ function validate(value, origin) {
 
 async function readConfig(request, env) {
   const saved = await env.SITE_CONFIG.get(KEY, 'json');
-  if (saved !== null) return saved;
+  if (saved !== null) return validate(saved, new URL(request.url).origin);
   // Keep the existing configuration until the first successful save.
   const asset = await env.ASSETS.fetch(new Request(new URL('/config.js', request.url)));
   if (!asset.ok) throw new Error('Initial configuration is unavailable');
@@ -70,20 +70,24 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const admin = url.pathname === ADMIN_PATH || url.pathname.startsWith(ADMIN_PATH + '/');
+    if (url.pathname.startsWith('/_') && !admin) return response('{}', 404);
     if (!admin && url.pathname !== '/config.js') return env.ASSETS.fetch(request);
     if (admin) {
       if (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) return response('{}', 403);
+      if (typeof env.ADMIN_PASSWORD !== 'string' || env.ADMIN_PASSWORD.length < 16) {
+        return response('{"error":"请先在 Cloudflare 设置至少 16 位的 ADMIN_PASSWORD Secret，并重新部署。"}', 503);
+      }
       if (!await authenticated(request, env.ADMIN_PASSWORD)) {
         return response('{"error":"需要管理员身份验证。"}', 401, { 'WWW-Authenticate': 'Basic realm="Private", charset="UTF-8"' });
       }
     }
+    if (url.pathname === '/config.js' && !['GET', 'HEAD'].includes(request.method)) return response('{}', 405, { Allow: 'GET, HEAD' });
     if (!env.SITE_CONFIG) {
       if (!admin) return env.ASSETS.fetch(request);
       return response('{"error":"请先在 Cloudflare 绑定 SITE_CONFIG KV 命名空间。"}', 503);
     }
     try {
       if (url.pathname === '/config.js') {
-        if (!['GET', 'HEAD'].includes(request.method)) return response('{}', 405, { Allow: 'GET, HEAD' });
         const config = await readConfig(request, env);
         return response(request.method === 'HEAD' ? null : `window.GEEKBIRD_CONFIG = Object.freeze(${JSON.stringify(config)});\n`, 200,
           { 'Content-Type': 'application/javascript; charset=utf-8' });

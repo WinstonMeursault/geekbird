@@ -1,16 +1,10 @@
 # 极客鸟 GeekBird
 
-HTML / CSS / JavaScript 三页官网，字体在站点内托管。支持 Cloudflare Pages 托管与密码保护的配置后台，也可作为静态网站由 Nginx 托管。
+正式部署目标为 **Cloudflare Pages**，包含三个公开页面与密码保护的配置后台。无需 SSH、独立服务器或 npm 构建依赖；管理配置保存在 Cloudflare KV。
 
-## 当前 VPS 访问
+## 正式访问地址
 
-已部署到原 VPS：网站 <https://47.120.64.37/>，管理后台 <https://47.120.64.37/_gb-settings/>。原地址 <http://47.120.64.37:54321/> 继续可用。后台用户名为 `admin`，使用部署时单独设置的密码。
-
-VPS 版本直接把配置保存在服务器，无需绑定 Cloudflare KV，也无需设置 Cloudflare 环境变量；下面的 Cloudflare 步骤用于以后迁移。发布、持久化配置及证书自动续期说明见 [VPS 部署记录](docs/vps.md)。
-
-## 预定正式域名
-
-正式域名（预先登记）：<https://geekbird.net/>。域名绑定和部署完成后使用以下地址：
+正式域名：<https://geekbird.net/>。域名绑定和部署完成后使用以下地址：
 
 - 首页：<https://geekbird.net/>
 - 维修服务：<https://geekbird.net/service/>
@@ -25,10 +19,14 @@ VPS 版本直接把配置保存在服务器，无需绑定 Cloudflare KV，也�
 
 在 Cloudflare 控制台进入 **Workers & Pages**，创建 **Pages** 项目并连接代码仓库，填写：
 
+- 代码仓库：`galiandan/geekbird`
+- 生产分支：`main`
 - 框架预设：`None`
 - 构建命令：`python3 scripts/cloudflare.py`
 - 构建输出目录：`dist/cloudflare`
-- 根目录：仓库根目录
+- 根目录：仓库根目录（留空）
+
+这里要创建 **Pages** 项目，选择连接 Git 仓库。不要使用普通 Workers 的部署向导，也不要把输出目录设成仓库根目录。
 
 在项目的 **Custom domains（自定义域）** 中添加 `geekbird.net`，按提示完成 DNS 配置，等待域名和 HTTPS 生效。绑定完成前也可使用 Cloudflare 分配的 `*.pages.dev` 地址访问。
 
@@ -126,7 +124,10 @@ geekbird/
 │   └── subset_fonts.py        文案修改后的字体子集更新工具
 ├── tests/cloudflare.test.mjs   后台权限与配置接口测试
 ├── dist/                      生成的交付文件，不纳入版本管理
-│   ├── cloudflare/            Pages 构建输出，包含 Worker 与静态文件
+│   ├── cloudflare/            Pages 构建输出，共 24 个文件
+│   ├── geekbird-cloudflare-pages.zip  Pages 专用部署包
+│   ├── cloudflare-manifest.json      Pages 文件 SHA-256 清单
+│   ├── cloudflare-SHA256SUMS         Pages 压缩包与清单校验值
 │   ├── geekbird-site.tar.gz    可部署网站，解压得到 public/
 │   ├── manifest.json          每个上线文件的 SHA-256
 │   └── SHA256SUMS             部署包与 manifest 的校验值
@@ -142,37 +143,24 @@ Cloudflare 部署后通过管理页修改以下配置。根目录 [config.js](co
 
 QQ 和预约链接是公开配置，管理密码只保存在 Cloudflare Secret 中。预约页读取 `/config.js` 后更新“开始预约”的链接；未配置或无效时显示入口尚未开放。右下角联系入口使用同一份配置。
 
-## 准备 Nginx 静态部署包（可选）
-
-Cloudflare Pages 使用上面的构建设置。以下为原 Nginx 静态部署方式，不包含管理后台。
-
-需要 Python 3.8 或更新版本，无需安装 Python 包。
+## 正式发布前检查
 
 ```sh
-python3 scripts/release.py --check
-python3 scripts/release.py
+python3 scripts/cloudflare.py
+node --test tests/cloudflare.test.mjs
 ```
 
-打包前会检查本地链接与锚点、图片引用、预约配置以及是否残留表单；打包后逐文件核对 SHA-256。部署包只包含 `public/` 下的 18 个网站文件，不包含原图、预览、说明或工具脚本。相同输入会生成相同校验值的压缩包。
+构建仅需 Python 3；测试需要 Node.js 22 或以上。构建会生成 `dist/cloudflare/`、`dist/geekbird-cloudflare-pages.zip` 和 SHA-256 清单，检查打包文件一致性。产物只包含公开静态资源和 Pages Worker，不包含管理密码、VPS 服务、文档或原始设计稿。
 
-新增中文文案后，先运行 `python3 scripts/subset_fonts.py` 更新字体字符集，再重新打包。字体更新需要联网，网站访问时不请求外部字体服务。完整文案与排版说明见 [文字设计](docs/copywriting.md)。
+已补齐自定义 404、静态资源缓存规则、正式域名 canonical、`robots.txt` 和只包含三个公开页面的站点地图。后台保持无公开入口，页面和接口均禁止缓存与搜索收录。
 
-正式发布步骤见 [部署说明](docs/deployment.md)。Nginx 必须指向部署包里的 `public/`，不要直接公开整个源项目目录。
+本地 Cloudflare 运行环境的完整检查方式、迁移顺序和上线验收见 [Cloudflare 部署说明](docs/cloudflare.md)。本地测试通过不代表 Cloudflare 账号中的域名、密码和 KV 已配置完成。
 
-## 历史 Nginx 部署记录
+## 从 VPS 迁移
 
-后续正式访问地址统一使用 <https://geekbird.net/>。以下保留迁移前的部署与回滚记录，不代表 Cloudflare 当前部署状态。
+1. 先通过 Pages 分配的 `*.pages.dev` 地址验证页面、密码登录和配置保存。
+2. VPS 的配置不会自动同步到 Cloudflare KV。部署前核对 VPS 后台的 QQ 与预约链接，在 Pages 后台保存一遍；此前尚未保存时会使用源码 `config.js` 的默认值。
+3. 在 Pages 的 **Custom domains（自定义域）** 添加 `geekbird.net`，按提示调整 DNS，等待 HTTPS 生效后再验证正式地址。
+4. 保留 VPS 供切换期间回退。Pages 回滚部署不会回滚 KV 配置；修改重要配置前记下原值。
 
-2026-09-19 部署文字设计版本时，网站目录 `/var/www/geekbird/public` 指向 `/var/www/geekbird/releases/20260919-075312-typography/public`，对外使用 54321 端口。
-
-替换前备份：`/var/backups/geekbird-before-typography-20260919-075312.tar.gz`。上一版本保留在 `/var/www/geekbird/releases/20260919-073516-production/public`，可供回滚。
-
-## 已有验证记录
-
-- Cloudflare Pages 构建、后台脚本语法检查与 6 项配置接口测试已通过；域名绑定及真实 Cloudflare 环境需部署后验证。
-
-- 三页已统一字体层级与文案，中文 Noto Sans SC、英文 Manrope 均本地加载。
-- 预约入口先显示大界面，点击“开始预约”才打开外部链接；无站内表单。
-- 预约页 320 / 390 / 768 / 1440 / 1920px 布局与正式图片加载。
-- 部署包文件清单、校验值与重复构建一致性。
-- 正式 Nginx 配置已通过语法检查并重载；公网文件 SHA-256、缓存策略、图片类型、gzip 与预约流程均已验证。
+VPS 网站：<https://47.120.64.37/>，VPS 后台：<https://47.120.64.37/_gb-settings/>；原 `http://47.120.64.37:54321/` 也保留。两套后台各自保存配置和密码，互不同步。历史服务、备份和证书续期说明见 [VPS 部署记录](docs/vps.md)，早期纯静态部署见 [Nginx 部署说明](docs/deployment.md)。

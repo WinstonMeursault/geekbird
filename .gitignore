@@ -1,5 +1,10 @@
 # Generated release output
 /dist/
+/.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
 
 # Local tooling and editor files
 __pycache__/
