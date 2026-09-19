@@ -10,7 +10,9 @@
 | ChatGPT Image 2026年9月19日 14_32_15.png | landscape.webp / landscape-mobile.webp | 水平镜像，将设备置于右侧；手机裁取鸟与设备 |
 | ChatGPT Image 2026年9月19日 14_32_01.png | architecture.webp / architecture-mobile.webp | 桌面保留全图；手机保留光井、飞鸟和人物 |
 
-六张 WebP 合计约 582 KiB，网页按屏幕宽度加载对应的三张，不同时加载桌面与手机版。
+六张 WebP 已从原始 PNG 重新导出为质量参数 95 的版本，合计约 1.02 MiB。网页按页面和屏幕宽度加载对应背景，无需同时下载六张。桌面保留原图尺寸，手机保持原有裁切、不缩小分辨率。画质检查和大屏限制见 [图片质量检查](image-quality.md)。
+
+可安装 Pillow 后运行 `python3 scripts/export_images.py` 重现导出。此工具只在更换图片时使用，Cloudflare 日常构建不依赖 Pillow。若需要无损版本，可另行运行 `python3 scripts/export_images.py --lossless --output-dir dist/images-lossless`，不覆盖正常网页资源。
 
 ## 统一生成要求
 
